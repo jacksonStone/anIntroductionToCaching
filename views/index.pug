@@ -1,0 +1,49 @@
+doctype html
+html.
+  <h1>Cached Comment Board!</h1>
+  
+  <div id="comments"></div>
+  <button id="bust-cache" onclick="bustCacheClientSide()">
+  Bust it up!
+  </button>
+  <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="crossorigin="anonymous"></script>
+  
+  <script>
+  var serverCache;
+  function getServerCacheVersion(callback){
+    $.ajax({url:"/cacheversions", method:'get',success:function(res){
+      localStorage['getComments'] = res.getComments;
+      callback();
+    }});
+  }
+  function bustCacheClientSide(){
+    $('#comments').empty();
+    localStorage['getComments'] = Math.random()+'';
+    getComments();
+  }
+  function getComments(){
+    $.ajax({
+      url: "/comments?cacheversion="+(localStorage['getComments']),
+      method:"get",
+      success:function(res){
+        let comments = $('#comments');        
+        for(let i in res.Items) {
+          let data = res.Items[i], 
+            commentNode = $('<div>'),
+            messageNode = $('<p>').text(data.message.S),
+            userNode = $('<h4>').text('According to: ' + data.userName.S);
+          commentNode.append(
+            userNode,
+            messageNode
+          );
+          comments.append(commentNode);
+        }
+      }
+    });
+  }
+  //Get comments on page load, busting cache with the server
+  getServerCacheVersion(getComments);
+  
+  //Only bust cache client side:
+  //getComments();
+  </script>
